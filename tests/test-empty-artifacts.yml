@@ -1,0 +1,21 @@
+name: Test with empty artifact directory
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create empty artifact directory
+        run: mkdir -p empty-artifacts
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: empty-artifacts
+
+      - name: Assert action completed without error
+        run: |
+          echo "Action completed successfully with empty artifact directory"
+          echo "PASS"

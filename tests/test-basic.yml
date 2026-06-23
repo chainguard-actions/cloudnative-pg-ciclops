@@ -1,0 +1,29 @@
+name: Test basic usage with example artifacts
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create artifact directory with test data
+        run: |
+          mkdir -p test-artifacts
+          cp $GITHUB_WORKSPACE/example-artifacts/*.json test-artifacts/
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: test-artifacts
+
+      - name: Assert thermometer output is non-empty
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: $THERMOMETER"
+          if [ -z "$THERMOMETER" ]; then
+            echo "FAIL: expected thermometer output to be non-empty"
+            exit 1
+          fi
+          echo "PASS"

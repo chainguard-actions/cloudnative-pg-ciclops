@@ -1,0 +1,44 @@
+name: Test output written to file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/passing-artifacts
+          output_file: summary-output.md
+
+      - name: Assert output file was created
+        run: |
+          echo "Checking for output file at $GITHUB_WORKSPACE/summary-output.md"
+          if [ ! -f "$GITHUB_WORKSPACE/summary-output.md" ]; then
+            echo "FAIL: output file summary-output.md was not created"
+            exit 1
+          fi
+          echo "PASS: output file exists"
+
+      - name: Assert output file contains markdown content
+        run: |
+          echo "Contents of summary-output.md:"
+          cat "$GITHUB_WORKSPACE/summary-output.md"
+          if ! grep -q "#" "$GITHUB_WORKSPACE/summary-output.md"; then
+            echo "FAIL: output file does not appear to contain markdown headings"
+            exit 1
+          fi
+          echo "PASS: output file contains markdown content"
+
+      - name: Assert thermometer output is set
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: $THERMOMETER"
+          if [ -z "$THERMOMETER" ]; then
+            echo "FAIL: thermometer output should not be empty"
+            exit 1
+          fi
+          echo "PASS: thermometer is '$THERMOMETER'"

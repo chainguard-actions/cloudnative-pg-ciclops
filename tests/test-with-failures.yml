@@ -1,0 +1,36 @@
+name: Test summary with failed test artifacts
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/failing-artifacts
+
+      - name: Assert thermometer output is set
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: $THERMOMETER"
+          if [ -z "$THERMOMETER" ]; then
+            echo "FAIL: thermometer output should not be empty when there are failures"
+            exit 1
+          fi
+          echo "PASS: thermometer is set to '$THERMOMETER'"
+
+      - name: Assert alerts output is set when there are failures
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts: $ALERTS"
+          if [ -z "$ALERTS" ]; then
+            echo "WARN: alerts output is empty despite having a failed test"
+          else
+            echo "PASS: alerts output is set to '$ALERTS'"
+          fi
+          echo "PASS"

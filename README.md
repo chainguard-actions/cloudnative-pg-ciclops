@@ -10,6 +10,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/cloudnative-pg-ciclops/tree/v1.3.1) | [`f5a7b35`](https://github.com/cloudnative-pg/ciclops/commit/f5a7b357a09f09052ec0358ac49e020f151f1653) |
+| v1.3.2 | [`v1.3.2`](https://github.com/chainguard-actions/cloudnative-pg-ciclops/tree/v1.3.2) | [`fc1c72c`](https://github.com/cloudnative-pg/ciclops/commit/fc1c72c2eb99e10aa437f14cd8563686b4b6e3b1) |
 
 ## Privacy
 

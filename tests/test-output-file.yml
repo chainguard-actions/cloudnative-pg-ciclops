@@ -1,0 +1,54 @@
+name: Test output to file
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create output directory in workspace
+        run: mkdir -p "$GITHUB_WORKSPACE/ciclops-output"
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/artifacts-passing
+          output_file: ciclops-output/report.md
+
+      - name: Assert output file was created
+        run: |
+          echo "Checking for output file at $GITHUB_WORKSPACE/ciclops-output/report.md"
+          if [ ! -f "$GITHUB_WORKSPACE/ciclops-output/report.md" ]; then
+            echo "FAIL: output file was not created"
+            exit 1
+          fi
+          echo "PASS: output file exists"
+
+      - name: Assert output file contains markdown content
+        run: |
+          CONTENT=$(cat "$GITHUB_WORKSPACE/ciclops-output/report.md")
+          echo "File content:"
+          echo "$CONTENT"
+          # The report should contain markdown table headers or headings
+          if ! echo "$CONTENT" | grep -qE '##|---|Overview'; then
+            echo "FAIL: output file does not appear to contain markdown content"
+            exit 1
+          fi
+          echo "PASS: output file contains markdown content"
+
+      - name: Assert no overflow (report fits within default limit)
+        env:
+          OVERFLOW: ${{ steps.action.outputs.Overflow }}
+        run: |
+          echo "overflow output: '$OVERFLOW'"
+          # With only 2 passing tests, the report should be well within the 1024K limit
+          # Note: overflow only triggers when GITHUB_STEP_SUMMARY is set, not when --out is used
+          if [ -n "$OVERFLOW" ]; then
+            echo "FAIL: unexpected overflow for small report: $OVERFLOW"
+            exit 1
+          fi
+          echo "PASS: no overflow as expected"

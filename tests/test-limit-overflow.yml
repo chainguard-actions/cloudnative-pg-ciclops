@@ -1,0 +1,48 @@
+name: Test limit_summary overflow behavior
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/artifacts-passing
+          # Set an extremely small limit (1 byte) to force overflow
+          # Note: overflow only triggers when GITHUB_STEP_SUMMARY is set (not when output_file is used)
+          # In act, GITHUB_STEP_SUMMARY is set automatically by the runner
+          limit_summary: 1
+
+      - name: Assert overflow output is set when limit is exceeded
+        env:
+          OVERFLOW: ${{ steps.action.outputs.Overflow }}
+        run: |
+          echo "overflow output: '$OVERFLOW'"
+          # With a 1-byte limit and GITHUB_STEP_SUMMARY set, the report should overflow
+          # and the Overflow output should be set to 'full-summary.md'
+          if [ -z "$OVERFLOW" ]; then
+            echo "FAIL: expected overflow output to be set but it was empty"
+            echo "Note: overflow only triggers when GITHUB_STEP_SUMMARY is set by the runner"
+            exit 1
+          fi
+          echo "PASS: overflow output is set: $OVERFLOW"
+
+      - name: Assert overflow file exists in workspace
+        env:
+          OVERFLOW: ${{ steps.action.outputs.Overflow }}
+        run: |
+          echo "Checking overflow file: $OVERFLOW"
+          # The overflow file is written to the workspace root as 'full-summary.md'
+          if [ ! -f "$GITHUB_WORKSPACE/$OVERFLOW" ]; then
+            echo "FAIL: overflow file '$GITHUB_WORKSPACE/$OVERFLOW' does not exist"
+            echo "Files in workspace:"
+            ls -la "$GITHUB_WORKSPACE/"
+            exit 1
+          fi
+          echo "PASS: overflow file exists at $GITHUB_WORKSPACE/$OVERFLOW"

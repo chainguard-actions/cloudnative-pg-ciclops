@@ -1,0 +1,24 @@
+name: Smoke Test
+
+on: [push]
+
+permissions: {}
+
+jobs:
+  smoke_test:
+    runs-on: ubuntu-latest
+    name: Smoke Test
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
+
+      - name: Generate Test Summary
+        id: generate-summary
+        uses: ./
+        with:
+          artifact_directory: example-artifacts/
+
+      - name: If there are alerts, echo them
+        if: ${{steps.generate-summary.outputs.alerts}}
+        env:
+          ALERTS: ${{ steps.generate-summary.outputs.alerts }}
+        run: echo "$ALERTS"

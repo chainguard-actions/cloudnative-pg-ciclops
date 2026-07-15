@@ -1,0 +1,39 @@
+name: Test basic usage with passing artifacts
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/artifacts-passing
+
+      - name: Assert no alerts output (all tests passed)
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts output: '$ALERTS'"
+          # When all tests pass, there should be no systematic failures, so alerts should be empty
+          if [ -n "$ALERTS" ]; then
+            echo "FAIL: expected no alerts but got: $ALERTS"
+            exit 1
+          fi
+          echo "PASS: no alerts as expected"
+
+      - name: Assert no overflow output (no output_file set, no GITHUB_STEP_SUMMARY overflow)
+        env:
+          OVERFLOW: ${{ steps.action.outputs.Overflow }}
+        run: |
+          echo "overflow output: '$OVERFLOW'"
+          if [ -n "$OVERFLOW" ]; then
+            echo "FAIL: expected no overflow but got: $OVERFLOW"
+            exit 1
+          fi
+          echo "PASS: no overflow as expected"

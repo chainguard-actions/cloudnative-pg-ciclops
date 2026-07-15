@@ -1,0 +1,41 @@
+name: Test systematic failure detection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/artifacts-failing
+
+      - name: Assert alerts output is present (systematic failures detected)
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts output: '$ALERTS'"
+          # When tests fail systematically (all runs of a test fail, with >1 run),
+          # alerts should be non-empty
+          if [ -z "$ALERTS" ]; then
+            echo "FAIL: expected alerts for systematic failures but got empty output"
+            exit 1
+          fi
+          echo "PASS: alerts present as expected"
+
+      - name: Assert alerts mention systematic test failures
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts: $ALERTS"
+          # The alerts output should mention "Tests" (from "Tests with systematic failures:")
+          if ! echo "$ALERTS" | grep -qi "Tests\|systematic\|failed"; then
+            echo "FAIL: alerts do not mention expected failure context"
+            exit 1
+          fi
+          echo "PASS: alerts contain expected failure information"

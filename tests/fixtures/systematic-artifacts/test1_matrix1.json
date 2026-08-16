@@ -1,0 +1,17 @@
+{
+    "name": "Systematic failure test -- always fails",
+    "state": "failed",
+    "start_time": "2023-01-15T10:00:00.000000+00:00",
+    "end_time": "2023-01-15T10:02:30.000000+00:00",
+    "error": "Expected true to be false",
+    "error_file": "/workspace/tests/e2e/systematic_test.go",
+    "error_line": 55,
+    "platform": "local",
+    "postgres_kind": "PostgreSQL",
+    "matrix_id": "matrix1",
+    "postgres_version": "15.1",
+    "k8s_version": "1.26",
+    "workflow_id": 42,
+    "repo": "test-repo",
+    "branch": "main"
+}

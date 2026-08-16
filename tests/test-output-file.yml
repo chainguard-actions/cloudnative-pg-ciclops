@@ -1,4 +1,4 @@
-name: Test output written to file
+name: Test output to file
 on:
   workflow_dispatch:
 jobs:
@@ -6,39 +6,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
+      - name: Verify fixture directory exists
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE/tests/fixtures/passing-artifacts/"
       - id: action
         uses: .
         with:
           artifact_directory: tests/fixtures/passing-artifacts
-          output_file: summary-output.md
-
+          output_file: test-summary.md
       - name: Assert output file was created
         run: |
-          echo "Checking for output file at $GITHUB_WORKSPACE/summary-output.md"
-          if [ ! -f "$GITHUB_WORKSPACE/summary-output.md" ]; then
-            echo "FAIL: output file summary-output.md was not created"
+          echo "Checking for output file at: $GITHUB_WORKSPACE/test-summary.md"
+          ls -la "$GITHUB_WORKSPACE/" | grep -E 'test-summary|\.md' || true
+          if [ ! -f "$GITHUB_WORKSPACE/test-summary.md" ]; then
+            echo "FAIL: expected output file $GITHUB_WORKSPACE/test-summary.md to exist"
             exit 1
           fi
           echo "PASS: output file exists"
-
       - name: Assert output file contains markdown content
         run: |
-          echo "Contents of summary-output.md:"
-          cat "$GITHUB_WORKSPACE/summary-output.md"
-          if ! grep -q "#" "$GITHUB_WORKSPACE/summary-output.md"; then
-            echo "FAIL: output file does not appear to contain markdown headings"
+          CONTENT=$(cat "$GITHUB_WORKSPACE/test-summary.md")
+          echo "content preview: ${CONTENT:0:300}"
+          if [ -z "$CONTENT" ]; then
+            echo "FAIL: output file is empty"
             exit 1
           fi
-          echo "PASS: output file contains markdown content"
-
-      - name: Assert thermometer output is set
-        env:
-          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+          # Check for expected markdown sections
+          if echo "$CONTENT" | grep -q "Overview"; then
+            echo "PASS: output file contains Overview section"
+          else
+            echo "FAIL: output file does not contain expected Overview section"
+            exit 1
+          fi
+      - name: Assert output file contains Thermometer section
         run: |
-          echo "thermometer: $THERMOMETER"
-          if [ -z "$THERMOMETER" ]; then
-            echo "FAIL: thermometer output should not be empty"
+          CONTENT=$(cat "$GITHUB_WORKSPACE/test-summary.md")
+          if echo "$CONTENT" | grep -q "Thermometer"; then
+            echo "PASS: output file contains Thermometer section"
+          else
+            echo "FAIL: output file does not contain Thermometer section"
             exit 1
           fi
-          echo "PASS: thermometer is '$THERMOMETER'"

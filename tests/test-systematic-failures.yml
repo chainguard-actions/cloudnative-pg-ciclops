@@ -1,0 +1,59 @@
+name: Test systematic failures detection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Verify fixture directory exists
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE/tests/fixtures/systematic-artifacts/"
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/systematic-artifacts
+      - name: Assert alerts output is non-empty (systematic failures detected)
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts: '$ALERTS'"
+          if [ -z "$ALERTS" ]; then
+            echo "FAIL: expected alerts output for systematic failures, got empty"
+            exit 1
+          fi
+          echo "PASS: alerts output is present as expected"
+      - name: Assert alerts mention failures
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts: '$ALERTS'"
+          if echo "$ALERTS" | grep -qi "systematic\|failed\|failure\|combinations"; then
+            echo "PASS: alerts mention failures as expected"
+          else
+            echo "FAIL: alerts do not mention expected failure information"
+            exit 1
+          fi
+      - name: Assert thermometer output is non-empty
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: '$THERMOMETER'"
+          if [ -z "$THERMOMETER" ]; then
+            echo "FAIL: expected thermometer output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: thermometer output is present"
+      - name: Assert thermometer shows red indicator (all tests failed)
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: '$THERMOMETER'"
+          # All tests failed so we expect a red circle (emoji or text form)
+          if echo "$THERMOMETER" | grep -qE '(🔴|red_circle)'; then
+            echo "PASS: thermometer shows red indicator as expected"
+          else
+            echo "FAIL: expected red indicator in thermometer for all-failing tests"
+            exit 1
+          fi

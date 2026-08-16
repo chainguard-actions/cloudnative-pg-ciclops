@@ -1,0 +1,49 @@
+name: Test basic usage with all-passing artifacts
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Verify fixture directory exists
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE/tests/fixtures/passing-artifacts/"
+          echo "Fixture files verified"
+      - id: action
+        uses: .
+        with:
+          artifact_directory: tests/fixtures/passing-artifacts
+      - name: Assert thermometer output is non-empty
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: '$THERMOMETER'"
+          if [ -z "$THERMOMETER" ]; then
+            echo "FAIL: expected thermometer output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: thermometer output is present"
+      - name: Assert alerts output is empty (no systematic failures)
+        env:
+          ALERTS: ${{ steps.action.outputs.alerts }}
+        run: |
+          echo "alerts: '$ALERTS'"
+          if [ -n "$ALERTS" ]; then
+            echo "FAIL: expected no alerts for all-passing tests, got: $ALERTS"
+            exit 1
+          fi
+          echo "PASS: no alerts as expected"
+      - name: Assert thermometer contains green indicator (all tests passed)
+        env:
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
+        run: |
+          echo "thermometer: '$THERMOMETER'"
+          # All tests passed so we expect a green circle (emoji or text form)
+          if echo "$THERMOMETER" | grep -qE '(🟢|large_green_circle)'; then
+            echo "PASS: thermometer shows green (all tests passed)"
+          else
+            echo "FAIL: expected green indicator in thermometer for all-passing tests"
+            exit 1
+          fi

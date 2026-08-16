@@ -1,4 +1,4 @@
-name: Test summary with failed test artifacts
+name: Test with failing artifacts
 on:
   workflow_dispatch:
 jobs:
@@ -6,31 +6,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
+      - name: Verify fixture directory exists
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE/tests/fixtures/failing-artifacts/"
       - id: action
         uses: .
         with:
           artifact_directory: tests/fixtures/failing-artifacts
-
-      - name: Assert thermometer output is set
+      - name: Assert thermometer output is non-empty
         env:
           THERMOMETER: ${{ steps.action.outputs.thermometer }}
         run: |
-          echo "thermometer: $THERMOMETER"
+          echo "thermometer: '$THERMOMETER'"
           if [ -z "$THERMOMETER" ]; then
-            echo "FAIL: thermometer output should not be empty when there are failures"
+            echo "FAIL: expected thermometer output to be non-empty"
             exit 1
           fi
-          echo "PASS: thermometer is set to '$THERMOMETER'"
-
-      - name: Assert alerts output is set when there are failures
+          echo "PASS: thermometer output is present"
+      - name: Assert thermometer contains non-green indicator (some tests failed)
         env:
-          ALERTS: ${{ steps.action.outputs.alerts }}
+          THERMOMETER: ${{ steps.action.outputs.thermometer }}
         run: |
-          echo "alerts: $ALERTS"
-          if [ -z "$ALERTS" ]; then
-            echo "WARN: alerts output is empty despite having a failed test"
+          echo "thermometer: '$THERMOMETER'"
+          # With 50% pass rate we expect red indicator (< 95% threshold)
+          # The thermometer uses text format: :large_green_circle:, :large_yellow_circle:, :red_circle:
+          if echo "$THERMOMETER" | grep -qE '(🟡|🔴|large_yellow_circle|red_circle)'; then
+            echo "PASS: thermometer shows non-green indicator as expected for failures"
           else
-            echo "PASS: alerts output is set to '$ALERTS'"
+            echo "FAIL: expected non-green indicator in thermometer for tests with failures"
+            exit 1
           fi
-          echo "PASS"
